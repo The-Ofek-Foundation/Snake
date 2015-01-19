@@ -209,13 +209,15 @@ class ContentPanel extends JPanel implements ActionListener, KeyListener, FocusL
 	public int AIDirection(int x, int y)	{	//	Returns which direction the snake should go
 		/*	IMPORTANT IMPORTANT
 
-			foodX, foodY --- Coordinants of Food
-			x, y         --- Current Coordinants of snake head
+			foodX, foodY --- Coordinates of Food
+			x, y         --- Current Coordinates of snake head
 
 			use field.length to get the length of field
 			NOTE: The first and last rows and columns of the field are all walls
 
 			In the field Array: 'B' is a black wall, 'H' is the head of the snake, 'T' is a tail of the snake
+
+			To find the length of the tail at a given point, use trail[][]
 
 			DIRECTIONS:
 
