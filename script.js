@@ -226,6 +226,8 @@ function killSnake() {
 }
 
 function moveSnake(draw) {
+	if (over !== false)
+		return;
 	var tempHead = getNextLocation(snakeHead, snakeDirectionFacing);
 	if (tempHead[0] === -1 || tempHead[0] === dimensions[0] ||
 		tempHead[1] === -1 || tempHead[1] === dimensions[1]) {
