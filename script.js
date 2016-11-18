@@ -17,6 +17,11 @@ function pageReady() {
 	setTimeout(resizeGameSettingsTable, 0);
 }
 
+function onResize() {
+	resizeBoard();
+	drawBoard();
+}
+
 function resizeBoard() {
 	docWidth = getElemWidth(contentWrapper);
 	docHeight = getElemHeight(contentWrapper);
