@@ -10,7 +10,11 @@ var movingInterval;
 var gameSpeed;
 var teleportationWalls;
 var snakeMoving = false;
+var aiTurn;
+var aiMode = 'shortest path';
 var over;
+var aiQueue;
+var aiWasHere;
 
 function pageReady() {
 	resizeBoard();
@@ -50,6 +54,14 @@ function newGame() {
 			board[i][a] = 0;
 	}
 
+	aiQueue = new Array(dimensions[0] * dimensions[0] * dimensions[1]);
+	aiWasHere = new Array(dimensions[0]);
+	for (var i = 0; i < aiWasHere.length; i++) {
+		aiWasHere[i] = new Array(dimensions[1]);
+		for (var a = 0; a < aiWasHere[i].length; a++)
+			aiWasHere[i][a] = new Array(dimensions[0] * dimensions[1] * 2);
+	}
+
 	snakeLength = 1;
 	snakeHead = [parseInt(Math.random() * board.length),
 		parseInt(Math.random() * board[0].length)];
@@ -58,20 +70,39 @@ function newGame() {
 	snakeDirectionFacing = lastDirectionMoved = -1;
 	over = false;
 
+	if (aiTurn !== 'none')
+		playAiMove();
+
 	drawBoard();
+}
+
+function playAiMove() {
+	switch (aiMode) {
+		case 'shortest path':
+			snakeDirectionFacing = shortestPathAi(snakeHead);
+			break;
+	}
 }
 
 function getSettings() {
 	dimensions = gameSettings.getOrSet('dimensions', [25, 25]);
 	gameSpeed = gameSettings.getOrSet('gameSpeed', 75);
 	teleportationWalls = gameSettings.getOrSet('teleportationWalls', false);
+	aiTurn = gameSettings.getOrSet('aiTurn', 'none');
 }
 
 function placeItem(item) {
 	var x, y;
+	var nextLoc = getNextLocation(snakeHead, snakeDirectionFacing);
+	var nextLoc2 = getNextLocation(nextLoc, snakeDirectionFacing);
 	do {
 		x = parseInt(Math.random() * board.length);
 		y = parseInt(Math.random() * board[0].length);
+
+		// prevents placing right in front
+		if (x === nextLoc[0] && y === nextLoc[1] ||
+			x === nextLoc2[0] && y === nextLoc2[1])
+			continue;
 	}	while (board[x][y] !== 0);
 	board[x][y] = item;
 }
@@ -218,15 +249,93 @@ function moveSnake(draw) {
 	snakeHead = tempHead;
 	board[snakeHead[0]][snakeHead[1]] = -1;
 	lastDirectionMoved = snakeDirectionFacing;
-	if (draw)
+	if (draw) {
 		drawBoard();
+		if (aiTurn !== 'none')
+			playAiMove();
+	}
+}
+
+function shortestPathAi(snakeHead) {
+	var tempBoard = aiCopy(board, snakeLength);
+	var currHead = snakeHead;
+	var q = aiQueue;
+	var qSize = 0, depth = 0;
+
+	for (var i = 0; i < aiWasHere.length; i++)
+		for (var a = 0; a < aiWasHere[i].length; a++)
+			for (var b = 0; b < aiWasHere[i][a].length; b++)
+				aiWasHere[i][a][b] = false;
+
+	qSize = addLegalMoves(currHead, aiWasHere, snakeLength, q, qSize, tempBoard, depth, -1);
+
+	var deepest = -1, deepDir = snakeDirectionFacing;
+
+	var move = [-1, -1], tmove, lastVal; // [loc[], depth, dir]
+	for (var i = 0; i < qSize; i++) {
+		tmove = q[i];
+		if (tempBoard[tmove[0][0]][tmove[0][1]] === 1) // food
+			return tmove[2];
+		if (tmove[1] === move[1]) // same depth
+			tempBoard[move[0][0]][move[0][1]] = lastVal;
+
+		move = tmove;
+		depth = move[1] + 1;
+		lastVal = tempBoard[move[0][0]][move[0][1]];
+		tempBoard[move[0][0]][move[0][1]] = -(depth + snakeLength);
+		qSize = addLegalMoves(move[0], aiWasHere, snakeLength, q, qSize, tempBoard, depth, move[2]);
+		if (depth > deepest) {
+			deepest = depth;
+			deepDir = move[2];
+		}
+	}
+	return deepDir; // game over, but playing for the longest game possible
+}
+
+function addLegalMoves(loc, wasHere, sLength, queue, qSize, tboard, depth, dir) {
+	var nextLoc, init = dir === -1, bval;
+	for (var i = 0; i < 4; i++) {
+		nextLoc = getNextLocation(loc, i);
+		if (init)
+			dir = i;
+		if (nextLoc[0] === -1 || nextLoc[0] === dimensions[0] ||
+			nextLoc[1] === -1 || nextLoc[1] === dimensions[1])
+			continue;
+		if (wasHere[nextLoc[0]][nextLoc[1]][depth])
+			continue;
+		bval = tboard[nextLoc[0]][nextLoc[1]];
+		switch (bval) {
+			case 0:
+				queue[qSize] = [nextLoc, depth, dir];
+				wasHere[nextLoc[0]][nextLoc[1]][depth] = true;
+				qSize++;
+				break;
+			case 1:
+				queue[qSize] = [nextLoc, depth, dir];
+				wasHere[nextLoc[0]][nextLoc[1]][depth] = true;
+				qSize++;
+				return qSize;
+			case 2:
+				break;
+			default:
+				if (bval - sLength >= -depth) {
+					queue[qSize] = [nextLoc, depth, dir];
+					wasHere[nextLoc[0]][nextLoc[1]][depth] = true;
+					qSize++;
+				}
+				break;
+		}
+	}
+	return qSize;
 }
 
 document.addEventListener('keydown', function (event) {
 	switch (event.which) {
 		case 37: case 38: case 39: case 40:
-			if (over)
+			if (over) {
 				newGame();
+				break;
+			}
 			var tempDirection = event.which - 37;
 			if ((tempDirection + lastDirectionMoved) % 2 === 1 ||
 				lastDirectionMoved === -1)
@@ -273,6 +382,7 @@ function getNewSettings() {
 		'dimensions': [getInputValue('dimension-x'), getInputValue('dimension-x')],
 		'gameSpeed': getInputValue('game-speed'),
 		'teleportationWalls': getInputValue('teleportation-walls'),
+		'aiTurn': getInputValue('ai-turn'),
 	}
 }
 
@@ -280,4 +390,18 @@ function populateSettingsForm(settings) {
 	setInputValue('dimension-x', settings.dimensions[0]);
 	setInputValue('game-speed', settings.gameSpeed);
 	setInputValue('teleportation-walls', settings.teleportationWalls);
+	setInputValue('ai-turn', settings.aiTurn);
+}
+
+function aiCopy(board, length) {
+	var tempBoard = new Array(board.length);
+	for (var i = 0; i < tempBoard.length; i++) {
+		tempBoard[i] = new Array(board[i].length);
+		for (var a = 0; a < tempBoard[i].length; a++) {
+			if (board[i][a] < 0)
+				tempBoard[i][a] = -(length + board[i][a] + 1);
+			else tempBoard[i][a] = board[i][a];
+		}
+	}
+	return tempBoard;
 }
