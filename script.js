@@ -192,7 +192,10 @@ function moveSnake(draw) {
 document.addEventListener('keydown', function (event) {
 	switch (event.which) {
 		case 37: case 38: case 39: case 40:
-			snakeDirectionFacing = event.which - 37;
+			var tempDirection = event.which - 37;
+			if ((tempDirection + snakeDirectionFacing) % 2 === 1 ||
+				snakeDirectionFacing === -1)
+				snakeDirectionFacing = tempDirection;
 			if (!snakeMoving)
 				startMoving();
 	}
