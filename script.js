@@ -10,6 +10,7 @@ var movingInterval;
 var gameSpeed = 100;
 var teleportationWalls = true;
 var snakeMoving = false;
+var over;
 
 function pageReady() {
 	resizeBoard();
@@ -54,6 +55,7 @@ function newGame() {
 	board[snakeHead[0]][snakeHead[1]] = -1;
 	placeFood();
 	snakeDirectionFacing = -1;
+	over = false;
 
 	drawBoard();
 }
@@ -173,6 +175,12 @@ function decayTail() {
 				else board[i][a]--;
 }
 
+function killSnake() {
+	stopMoving();
+	over = true;
+	alert("Game Over! Final Length: " + snakeLength);
+}
+
 function moveSnake(draw) {
 	var tempHead = getNextLocation(snakeHead, snakeDirectionFacing);
 	switch (board[tempHead[0]][tempHead[1]]) {
@@ -185,7 +193,7 @@ function moveSnake(draw) {
 			placeFood();
 			break;
 		default:
-			stopMoving();
+			killSnake();
 			return;
 	}
 	snakeHead = tempHead;
@@ -197,6 +205,8 @@ function moveSnake(draw) {
 document.addEventListener('keydown', function (event) {
 	switch (event.which) {
 		case 37: case 38: case 39: case 40:
+			if (over)
+				newGame();
 			var tempDirection = event.which - 37;
 			if ((tempDirection + snakeDirectionFacing) % 2 === 1 ||
 				snakeDirectionFacing === -1)
