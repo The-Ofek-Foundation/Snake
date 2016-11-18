@@ -53,20 +53,20 @@ function newGame() {
 	snakeHead = [parseInt(Math.random() * board.length),
 		parseInt(Math.random() * board[0].length)];
 	board[snakeHead[0]][snakeHead[1]] = -1;
-	placeFood();
+	placeItem(1);
 	snakeDirectionFacing = lastDirectionMoved = -1;
 	over = false;
 
 	drawBoard();
 }
 
-function placeFood() {
+function placeItem(item) {
 	var x, y;
 	do {
 		x = parseInt(Math.random() * board.length);
 		y = parseInt(Math.random() * board[0].length);
 	}	while (board[x][y] !== 0);
-	board[x][y] = 1;
+	board[x][y] = item;
 }
 
 function startMoving() {
@@ -99,7 +99,12 @@ function drawBorder() {
 function drawSquare(x, y) {
 	switch (board[x][y]) {
 		case 0: return;
-		case 1: brush.fillStyle = 'red';
+		case 1:
+			brush.fillStyle = 'red';
+			break;
+		case 2:
+			brush.fillStyle = 'black';
+			break;
 		default:
 			if (board[x][y] < 0)
 				brush.fillStyle = getSnakeStyle(board[x][y]);
@@ -194,7 +199,9 @@ function moveSnake(draw) {
 		case 1:
 			snakeLength++;
 			decayTail();
-			placeFood();
+			placeItem(1);
+			if (snakeLength % 10 === 0)
+				placeItem(2);
 			break;
 		default:
 			killSnake();
