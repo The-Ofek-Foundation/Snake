@@ -5,10 +5,10 @@ var boardWidth;
 var boardui = getElemId('board');
 var brush = boardui.getContext('2d');
 var snakeLength, snakeHead;
-var snakeDirectionFacing;
+var snakeDirectionFacing, lastDirectionMoved;
 var movingInterval;
-var gameSpeed = 100;
-var teleportationWalls = true;
+var gameSpeed = 75;
+var teleportationWalls = false;
 var snakeMoving = false;
 var over;
 
@@ -54,7 +54,7 @@ function newGame() {
 		parseInt(Math.random() * board[0].length)];
 	board[snakeHead[0]][snakeHead[1]] = -1;
 	placeFood();
-	snakeDirectionFacing = -1;
+	snakeDirectionFacing = lastDirectionMoved = -1;
 	over = false;
 
 	drawBoard();
@@ -183,7 +183,11 @@ function killSnake() {
 
 function moveSnake(draw) {
 	var tempHead = getNextLocation(snakeHead, snakeDirectionFacing);
-	switch (board[tempHead[0]][tempHead[1]]) {
+	if (tempHead[0] === -1 || tempHead[0] === dimensions[0] ||
+		tempHead[1] === -1 || tempHead[1] === dimensions[1]) {
+		killSnake();
+		return;
+	} else switch (board[tempHead[0]][tempHead[1]]) {
 		case 0:
 			decayTail();
 			break;
@@ -198,6 +202,7 @@ function moveSnake(draw) {
 	}
 	snakeHead = tempHead;
 	board[snakeHead[0]][snakeHead[1]] = -1;
+	lastDirectionMoved = snakeDirectionFacing;
 	if (draw)
 		drawBoard();
 }
@@ -208,8 +213,8 @@ document.addEventListener('keydown', function (event) {
 			if (over)
 				newGame();
 			var tempDirection = event.which - 37;
-			if ((tempDirection + snakeDirectionFacing) % 2 === 1 ||
-				snakeDirectionFacing === -1)
+			if ((tempDirection + lastDirectionMoved) % 2 === 1 ||
+				lastDirectionMoved === -1)
 				snakeDirectionFacing = tempDirection;
 			if (!snakeMoving)
 				startMoving();
