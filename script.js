@@ -1,4 +1,4 @@
-var dimensions = [25, 25];
+var dimensions;
 var board;
 var squareWidth;
 var boardWidth;
@@ -7,8 +7,8 @@ var brush = boardui.getContext('2d');
 var snakeLength, snakeHead;
 var snakeDirectionFacing, lastDirectionMoved;
 var movingInterval;
-var gameSpeed = 75;
-var teleportationWalls = false;
+var gameSpeed;
+var teleportationWalls;
 var snakeMoving = false;
 var over;
 
@@ -36,12 +36,13 @@ function resizeBoard() {
 	boardui.setAttribute('width', boardWidth);
 	boardui.setAttribute('height', boardWidth);
 
-	squareWidth = boardWidth / (dimensions[0] + 2);
-
 	resizeGameSettingsTable();
 }
 
 function newGame() {
+	getSettings();
+	populateSettingsForm(gameSettings.getSettings());
+
 	board = new Array(dimensions[0]);
 	for (var i = 0; i < board.length; i++) {
 		board[i] = new Array(dimensions[1]);
@@ -58,6 +59,12 @@ function newGame() {
 	over = false;
 
 	drawBoard();
+}
+
+function getSettings() {
+	dimensions = gameSettings.getOrSet('dimensions', [25, 25]);
+	gameSpeed = gameSettings.getOrSet('gameSpeed', 75);
+	teleportationWalls = gameSettings.getOrSet('teleportationWalls', false);
 }
 
 function placeItem(item) {
@@ -141,6 +148,7 @@ function getSnakeStyle(num) {
 
 function drawBoard() {
 	clearBoard();
+	squareWidth = boardWidth / (dimensions[0] + 2);
 	drawBorder();
 
 	for (var i = 0; i < board.length; i++)
@@ -227,3 +235,49 @@ document.addEventListener('keydown', function (event) {
 				startMoving();
 	}
 });
+
+document.addEventListener('keypress', function (event) {
+	switch (event.which) {
+		case 115: case 83: // s
+			showSettingsForm();
+			break;
+		case 110: case 78: // n
+			newGame();
+			break;
+	}
+});
+
+getElemId('done').addEventListener('click', function (event) {
+	var settings = getNewSettings();
+	gameSettings.setSettings(settings);
+	hideSettingsForm();
+	newGame();
+});
+
+getElemId('cancel').addEventListener('click', function (event) {
+	hideSettingsForm();
+	populateSettingsForm(gameSettings.getSettings());
+});
+
+if (getElemId('save'))
+	getElemId('save').addEventListener('click', function (event) {
+		var settings = getNewSettings();
+		gameSettings.setSettings(settings);
+		gameSettings.saveSettings(settings);
+		hideSettingsForm();
+		newGame();
+	});
+
+function getNewSettings() {
+	return {
+		'dimensions': [getInputValue('dimension-x'), getInputValue('dimension-x')],
+		'gameSpeed': getInputValue('game-speed'),
+		'teleportationWalls': getInputValue('teleportation-walls'),
+	}
+}
+
+function populateSettingsForm(settings) {
+	setInputValue('dimension-x', settings.dimensions[0]);
+	setInputValue('game-speed', settings.gameSpeed);
+	setInputValue('teleportation-walls', settings.teleportationWalls);
+}
