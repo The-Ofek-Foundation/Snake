@@ -19,6 +19,7 @@ var over;
 var aiQueue;
 var aiWasHere;
 var multiplayer;
+var debug = false;
 
 function pageReady() {
 	resizeBoard();
@@ -48,6 +49,7 @@ function resizeBoard() {
 }
 
 function newGame() {
+	stopMoving();
 	getSettings();
 	populateSettingsForm(gameSettings.getSettings());
 
@@ -132,6 +134,8 @@ function placeItem(item) {
 }
 
 function startMoving() {
+	if (debug)
+		return;
 	stopMoving();
 	movingInterval = setInterval(function () {
 		moveSnake(true);
@@ -233,6 +237,11 @@ function moveSnake(draw) {
 	if (over !== false)
 		return;
 
+	if (snakeDirectionFacing !== -1)
+		decayTail(1);
+	if (multiplayer && snakeDirectionFacing2 !== -1)
+		decayTail(2);
+
 	if (aiTurn === 'first' || aiTurn === 'both')
 		switch (aiMode) {
 			case 'shortest path':
@@ -241,14 +250,15 @@ function moveSnake(draw) {
 		}
 
 	if (snakeDirectionFacing !== -1) {
+		if (snakeLength === 1) decayTail(1);
 		var tempHead = getNextLocation(snakeHead, snakeDirectionFacing);
 		snakeLength = parseMove(tempHead, snakeLength, 1);
 		if (snakeLength < 0)
 			return;
 		snakeHead = tempHead;
 
-		if (over === false)
-			decayTail(1);
+		// if (over === false)
+		// 	decayTail(1);
 
 		board[snakeHead[0]][snakeHead[1]] = -1;
 		field[snakeHead[0]][snakeHead[1]] = 1;
@@ -265,6 +275,7 @@ function moveSnake(draw) {
 		}
 
 	if (multiplayer && snakeDirectionFacing2 !== -1) {
+		if (snakeLength2 === 1) decayTail(2);
 		tempHead = getNextLocation(snakeHead2, snakeDirectionFacing2);
 		snakeLength2 = parseMove(tempHead, snakeLength2, 2);
 		if (snakeLength2 < 0)
@@ -272,8 +283,8 @@ function moveSnake(draw) {
 
 		snakeHead2 = tempHead;
 
-		if (over === false)
-			decayTail(2);
+		// if (over === false)
+		// 	decayTail(2);
 
 		board[snakeHead2[0]][snakeHead2[1]] = -1;
 		field[snakeHead2[0]][snakeHead2[1]] = 2;
@@ -345,6 +356,7 @@ function shortestPathAi(snakeHead, sLength) {
 			deepDir = move[2];
 		}
 	}
+	console.log("Game Over!", qSize, depth, q, aiWasHere);
 	return deepDir; // game over, but playing for the longest game possible
 }
 
@@ -374,10 +386,10 @@ function addLegalMoves(loc, wasHere, queue, qSize, tboard, tfield, depth, dir) {
 			case 2:
 				break;
 			default:
-				if (tfield[nextLoc[0]][nextLoc[1]] === 1)
-					tlen = snakeLength;
-				else tlen = snakeLength2;
-				if (bval - tlen >= -depth) {
+				// if (tfield[nextLoc[0]][nextLoc[1]] === 1)
+				// 	tlen = snakeLength;
+				// else tlen = snakeLength2;
+				if (bval >= depth) {
 					queue[qSize] = [nextLoc, depth, dir];
 					wasHere[nextLoc[0]][nextLoc[1]][depth] = true;
 					qSize++;
@@ -401,6 +413,8 @@ document.addEventListener('keydown', function (event) {
 				snakeDirectionFacing = tempDirection;
 			if (!snakeMoving)
 				startMoving();
+			break;
+		default: return;
 	}
 });
 
@@ -428,6 +442,10 @@ document.addEventListener('keypress', function (event) {
 			newGame();
 			return;
 		case 32:
+			if (debug) {
+				moveSnake();
+				return;
+			}
 			if (!snakeMoving)
 				startMoving();
 			return;
@@ -509,29 +527,7 @@ function simpleCopy(arr) {
 
 function getSnakeStyle(num, fval) {
 	switch (fval) {
-		case 1: // grayscale
-			switch (Math.ceil(Math.sqrt(-num))) {
-				case 1: return '#2e2e2e';
-				case 2: return '#3d3d3d';
-				case 3: return '#4c4c4c';
-				case 4: return '#5c5c5c';
-				case 5: return '#6b6b6b';
-				case 6: return '#7a7a7a';
-				case 7: return '#8a8a8a';
-				case 8: return '#999999';
-				case 9: return '#a9a9a9';
-				case 10: return '#b0b0b0';
-				case 11: return '#b8b8b8';
-				case 12: return '#c0c0c0';
-				case 13: return '#c8c8c8';
-				case 14: return '#d0d0d0';
-				case 15: return '#d7d7d7';
-				case 16: return '#dfdfdf';
-				case 17: return '#e7e7e7';
-				case 18: return '#efefef';
-				default: return '#f7f7f7';
-			}
-		case 2: // bluescale
+		case 1: // bluescale
 			switch (Math.ceil(Math.sqrt(-num))) {
 				case 1: return '#111c3d';
 				case 2: return '#172651';
@@ -552,6 +548,50 @@ function getSnakeStyle(num, fval) {
 				case 17: return '#cbd6f6';
 				case 18: return '#dce3f9';
 				default: return '#edf1fc';
+			}
+		case 2: // greenscale
+			switch (Math.ceil(Math.sqrt(-num))) {
+				case 1: return '#004522';
+				case 2: return '#005c2e';
+				case 3: return '#007339';
+				case 4: return '#008b45';
+				case 5: return '#00a250';
+				case 6: return '#00b95c';
+				case 7: return '#00d067';
+				case 8: return '#00e773';
+				case 9: return '#00ff7f';
+				case 10: return '#17ff8a';
+				case 11: return '#2eff96';
+				case 12: return '#45ffa1';
+				case 13: return '#5cffad';
+				case 14: return '#73ffb9';
+				case 15: return '#8bffc4';
+				case 16: return '#a2ffd0';
+				case 17: return '#b9ffdc';
+				case 18: return '#d0ffe7';
+				default: return '#e7fff3';
+			}
+		case 3: // grayscale
+			switch (Math.ceil(Math.sqrt(-num))) {
+				case 1: return '#2e2e2e';
+				case 2: return '#3d3d3d';
+				case 3: return '#4c4c4c';
+				case 4: return '#5c5c5c';
+				case 5: return '#6b6b6b';
+				case 6: return '#7a7a7a';
+				case 7: return '#8a8a8a';
+				case 8: return '#999999';
+				case 9: return '#a9a9a9';
+				case 10: return '#b0b0b0';
+				case 11: return '#b8b8b8';
+				case 12: return '#c0c0c0';
+				case 13: return '#c8c8c8';
+				case 14: return '#d0d0d0';
+				case 15: return '#d7d7d7';
+				case 16: return '#dfdfdf';
+				case 17: return '#e7e7e7';
+				case 18: return '#efefef';
+				default: return '#f7f7f7';
 			}
 		default: return 'pink';
 	}
