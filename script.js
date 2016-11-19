@@ -227,10 +227,13 @@ function killSnake(fval) {
 	stopMoving();
 	var winval = fval === 1 ? 2:1;
 	over = true;
-	if (multiplayer)
-		alert("Game Over! Player " + winval + " won with a length of " +
-			(winval === 1 ? snakeLength:snakeLength2) + "!");
-	else alert("Game Over! Final Length: " + snakeLength);
+	drawBoard();
+	setTimeout(function () {
+		if (multiplayer)
+			alert("Game Over! Player " + winval + " won with a length of " +
+				(winval === 1 ? snakeLength:snakeLength2) + "!");
+		else alert("Game Over! Final Length: " + snakeLength);
+	}, 10);
 }
 
 function moveSnake(draw) {
@@ -253,19 +256,14 @@ function moveSnake(draw) {
 		if (snakeLength === 1) decayTail(1);
 		var tempHead = getNextLocation(snakeHead, snakeDirectionFacing);
 		snakeLength = parseMove(tempHead, snakeLength, 1);
-		if (snakeLength < 0)
+		if (over !== false)
 			return;
 		snakeHead = tempHead;
-
-		// if (over === false)
-		// 	decayTail(1);
 
 		board[snakeHead[0]][snakeHead[1]] = -1;
 		field[snakeHead[0]][snakeHead[1]] = 1;
 		lastDirectionMoved = snakeDirectionFacing;
 	}
-
-	drawBoard();
 
 	if (aiTurn === 'second' || aiTurn === 'both')
 		switch (aiMode2) {
@@ -278,29 +276,24 @@ function moveSnake(draw) {
 		if (snakeLength2 === 1) decayTail(2);
 		tempHead = getNextLocation(snakeHead2, snakeDirectionFacing2);
 		snakeLength2 = parseMove(tempHead, snakeLength2, 2);
-		if (snakeLength2 < 0)
+		if (over !== false)
 			return;
 
 		snakeHead2 = tempHead;
-
-		// if (over === false)
-		// 	decayTail(2);
 
 		board[snakeHead2[0]][snakeHead2[1]] = -1;
 		field[snakeHead2[0]][snakeHead2[1]] = 2;
 		lastDirectionMoved2 = snakeDirectionFacing2;
 	}
 
-	if (draw && over === false) {
+	if (draw && over === false)
 		drawBoard();
-	}
 }
 
 function parseMove(tHead, sLength, snakeNum) {
 	if (tHead[0] === -1 || tHead[0] === dimensions[0] ||
 		tHead[1] === -1 || tHead[1] === dimensions[1]) {
 		killSnake(snakeNum);
-		return -1;
 	} else switch (board[tHead[0]][tHead[1]]) {
 		case 0: break;
 		case 1:
@@ -311,14 +304,13 @@ function parseMove(tHead, sLength, snakeNum) {
 			break;
 		default:
 			killSnake(snakeNum);
-			return -1;
+			break;
 	}
 	return sLength;
 }
 
 function shortestPathAi(snakeHead, sLength) {
 	var tempBoard = aiCopy(board);
-	var tempField = simpleCopy(field);
 	var currHead = snakeHead;
 	var q = aiQueue;
 	var qSize = 0, depth = 0;
@@ -329,7 +321,7 @@ function shortestPathAi(snakeHead, sLength) {
 			for (var b = 0; b < aiWasHere[i][a].length; b++)
 				aiWasHere[i][a][b] = false;
 
-	qSize = addLegalMoves(currHead, aiWasHere, q, qSize, tempBoard, tempField, depth, -1);
+	qSize = addLegalMoves(currHead, aiWasHere, q, qSize, tempBoard, depth, -1);
 
 	var deepest = -1, deepDir = snakeDirectionFacing;
 
@@ -338,29 +330,26 @@ function shortestPathAi(snakeHead, sLength) {
 		tmove = q[i];
 		if (tempBoard[tmove[0][0]][tmove[0][1]] === 1) // food
 			return tmove[2];
-		if (tmove[1] === move[1]) { // same depth
+		if (tmove[1] === move[1]) // same depth
 			tempBoard[move[0][0]][move[0][1]] = lastVal;
-			tempField[move[0][0]][move[0][1]] = lastField;
-		}
 
 		move = tmove;
 		depth = move[1] + 1;
 		lastVal = tempBoard[move[0][0]][move[0][1]];
-		lastField = tempField[move[0][0]][move[0][1]];
 		tempBoard[move[0][0]][move[0][1]] = -(depth + sLength);
-		tempField[move[0][0]][move[0][1]] = fieldVal;
 
-		qSize = addLegalMoves(move[0], aiWasHere, q, qSize, tempBoard, tempField, depth, move[2]);
+		qSize = addLegalMoves(move[0], aiWasHere, q, qSize, tempBoard, depth, move[2]);
 		if (depth > deepest) {
 			deepest = depth;
 			deepDir = move[2];
 		}
 	}
 	console.log("Game Over!", qSize, depth, q, aiWasHere);
+	stopMoving();
 	return deepDir; // game over, but playing for the longest game possible
 }
 
-function addLegalMoves(loc, wasHere, queue, qSize, tboard, tfield, depth, dir) {
+function addLegalMoves(loc, wasHere, queue, qSize, tboard, depth, dir) {
 	var nextLoc, init = dir === -1, bval, tlen;
 	for (var i = 0; i < 4; i++) {
 		nextLoc = getNextLocation(loc, i);
@@ -386,10 +375,7 @@ function addLegalMoves(loc, wasHere, queue, qSize, tboard, tfield, depth, dir) {
 			case 2:
 				break;
 			default:
-				// if (tfield[nextLoc[0]][nextLoc[1]] === 1)
-				// 	tlen = snakeLength;
-				// else tlen = snakeLength2;
-				if (bval >= depth) {
+				if (bval >= -depth) {
 					queue[qSize] = [nextLoc, depth, dir];
 					wasHere[nextLoc[0]][nextLoc[1]][depth] = true;
 					qSize++;
