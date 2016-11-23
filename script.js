@@ -19,7 +19,7 @@ var over;
 var aiQueue;
 var aiWasHere;
 var multiplayer;
-var debug = false;
+var debug = true;
 
 function pageReady() {
 	resizeBoard();
@@ -430,6 +430,7 @@ document.addEventListener('keypress', function (event) {
 		case 32:
 			if (debug) {
 				moveSnake();
+				drawBoard();
 				return;
 			}
 			if (!snakeMoving)
