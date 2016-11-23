@@ -19,7 +19,7 @@ var over;
 var aiQueue;
 var aiWasHere;
 var multiplayer;
-var debug = true;
+var debug = false;
 
 function pageReady() {
 	resizeBoard();
