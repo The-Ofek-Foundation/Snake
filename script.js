@@ -660,16 +660,17 @@ function getSnakeStyle(num, fval) {
 }
 
 function gameStats(numGames) {
-	var snakeLengthSum = 0;
-	var startTime = new Date().getTime();
+	var snakeLengthSum = 0, elapsedTimeSum = 0;
 	for (var i = 0; i < numGames; i++) {
 		newGame();
+		var startTime = new Date().getTime();
 		while (over === false)
 			moveSnake(false);
-		console.log(snakeLength);
+		var elapsedTime = (new Date().getTime() - startTime);
+		console.log(snakeLength, elapsedTime);
 		snakeLengthSum += snakeLength;
+		elapsedTimeSum += elapsedTime;
 	}
-	var elapsedTime = (new Date().getTime() - startTime) / 1e3;
 	console.log("Average Length: " + snakeLengthSum / numGames);
-	console.log("Average Game Duration: " + elapsedTime / numGames);
+	console.log("Average Game Duration: " + elapsedTimeSum / numGames);
 }
