@@ -333,9 +333,10 @@ function shortestPathAi(snakeHead, sLength) {
 			deepDir = move[2];
 		}
 	}
-	console.log("Game Over!", qSize, depth, q, aiWasHere);
-	if (debug)
+	if (debug) {
+		console.log("Game Over!", qSize, depth, q, aiWasHere);
 		stopMoving();
+	}
 	return deepDir; // game over, but playing for the longest game possible
 }
 
@@ -408,9 +409,10 @@ function bfsAi(snakeHead, sLength) {
 		}
 		q[i] = null;
 	}
-	console.log("Game Over!", qSize, depth, q, aiWasHere);
-	if (debug)
+	if (debug) {
+		console.log("Game Over!", qSize, depth, q, aiWasHere);
 		stopMoving();
+	}
 	return deepDir; // game over, but playing for the longest game possible
 }
 
@@ -655,4 +657,19 @@ function getSnakeStyle(num, fval) {
 			}
 		default: return 'pink';
 	}
+}
+
+function gameStats(numGames) {
+	var snakeLengthSum = 0;
+	var startTime = new Date().getTime();
+	for (var i = 0; i < numGames; i++) {
+		newGame();
+		while (over === false)
+			moveSnake(false);
+		console.log(snakeLength);
+		snakeLengthSum += snakeLength;
+	}
+	var elapsedTime = (new Date().getTime() - startTime) / 1e3;
+	console.log("Average Length: " + snakeLengthSum / numGames);
+	console.log("Average Game Duration: " + elapsedTime / numGames);
 }
