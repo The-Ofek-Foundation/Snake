@@ -13,8 +13,7 @@ var gameSpeed;
 var teleportationWalls;
 var snakeMoving = false;
 var aiTurn;
-var aiMode = 'shortest path';
-var aiMode2 = 'shortest path';
+var aiMode, aiMode2;
 var over;
 var aiQueue;
 var aiWasHere;
@@ -93,28 +92,14 @@ function newGame() {
 	drawBoard();
 }
 
-function playAiMove() {
-	if (aiTurn === 'first' || aiTurn === 'both')
-		switch (aiMode) {
-			case 'shortest path':
-				snakeDirectionFacing = shortestPathAi(snakeHead, snakeLength);
-				break;
-		}
-
-	if (aiTurn === 'second' || aiTurn === 'both')
-		switch (aiMode2) {
-			case 'shortest path':
-				snakeDirectionFacing2 = shortestPathAi(snakeHead2, snakeLength2);
-				break;
-		}
-}
-
 function getSettings() {
 	dimensions = gameSettings.getOrSet('dimensions', [25, 25]);
 	gameSpeed = gameSettings.getOrSet('gameSpeed', 75);
 	teleportationWalls = gameSettings.getOrSet('teleportationWalls', false);
 	multiplayer = gameSettings.getOrSet('multiplayer', false);
 	aiTurn = gameSettings.getOrSet('aiTurn', 'none');
+	aiMode = gameSettings.getOrSet('aiMode', 'shortest path');
+	aiMode2 = gameSettings.getOrSet('aiMode2', 'shortest path');
 }
 
 function placeItem(item) {
@@ -248,6 +233,9 @@ function moveSnake(draw) {
 	if (aiTurn === 'first' || aiTurn === 'both')
 		switch (aiMode) {
 			case 'shortest path':
+				snakeDirectionFacing = bfsAi(snakeHead, snakeLength);
+				break;
+			case 'shortest path fast':
 				snakeDirectionFacing = shortestPathAi(snakeHead, snakeLength);
 				break;
 		}
@@ -268,6 +256,9 @@ function moveSnake(draw) {
 	if (aiTurn === 'second' || aiTurn === 'both')
 		switch (aiMode2) {
 			case 'shortest path':
+				snakeDirectionFacing2 = bfsAi(snakeHead2, snakeLength2);
+				break;
+			case 'shortest path fast':
 				snakeDirectionFacing2 = shortestPathAi(snakeHead2, snakeLength2);
 				break;
 		}
@@ -314,7 +305,6 @@ function shortestPathAi(snakeHead, sLength) {
 	var currHead = snakeHead;
 	var q = aiQueue;
 	var qSize = 0, depth = 0;
-	var fieldVal = field[snakeHead[0]][snakeHead[1]];
 
 	for (var i = 0; i < aiWasHere.length; i++)
 		for (var a = 0; a < aiWasHere[i].length; a++)
@@ -345,7 +335,8 @@ function shortestPathAi(snakeHead, sLength) {
 		}
 	}
 	console.log("Game Over!", qSize, depth, q, aiWasHere);
-	stopMoving();
+	if (debug)
+		stopMoving();
 	return deepDir; // game over, but playing for the longest game possible
 }
 
@@ -377,6 +368,85 @@ function addLegalMoves(loc, wasHere, queue, qSize, tboard, depth, dir) {
 			default:
 				if (bval >= -depth) {
 					queue[qSize] = [nextLoc, depth, dir];
+					wasHere[nextLoc[0]][nextLoc[1]][depth] = true;
+					qSize++;
+				}
+				break;
+		}
+	}
+	return qSize;
+}
+
+function bfsAi(snakeHead, sLength) {
+	var tempBoard = aiCopy(board);
+	var currHead = snakeHead;
+	var q = aiQueue;
+	var qSize = 0, depth = 0;
+
+	for (var i = 0; i < aiWasHere.length; i++)
+		for (var a = 0; a < aiWasHere[i].length; a++)
+			for (var b = 0; b < aiWasHere[i][a].length; b++)
+				aiWasHere[i][a][b] = false;
+
+	qSize = addLegalMovesBfs(currHead, aiWasHere, q, qSize, tempBoard, depth, sLength, -1);
+
+	var deepest = -1, deepDir = snakeDirectionFacing;
+
+	var move = []; // [board[][], loc[], depth, dir]
+	for (var i = 0; i < qSize; i++) {
+		move = q[i];
+		if (move[0] === 1) // food
+			return move[3];
+
+		tempBoard = move[0];
+		depth = move[2] + 1;
+
+		qSize = addLegalMovesBfs(move[1], aiWasHere, q, qSize, tempBoard, depth, sLength, move[3]);
+
+		if (depth > deepest) {
+			deepest = depth;
+			deepDir = move[3];
+		}
+		q[i] = null;
+	}
+	console.log("Game Over!", qSize, depth, q, aiWasHere);
+	if (debug)
+		stopMoving();
+	return deepDir; // game over, but playing for the longest game possible
+}
+
+function addLegalMovesBfs(loc, wasHere, queue, qSize, tboard, depth, sLength, dir) {
+	var nextLoc, init = dir === -1, bval, tlen, tboard2;
+	for (var i = 0; i < 4; i++) {
+		nextLoc = getNextLocation(loc, i);
+		if (init)
+			dir = i;
+		if (nextLoc[0] === -1 || nextLoc[0] === dimensions[0] ||
+			nextLoc[1] === -1 || nextLoc[1] === dimensions[1])
+			continue;
+		if (wasHere[nextLoc[0]][nextLoc[1]][depth])
+			continue;
+		bval = tboard[nextLoc[0]][nextLoc[1]];
+		switch (bval) {
+			case 0:
+				tboard2 = simpleCopy(tboard);
+				tboard2[nextLoc[0]][nextLoc[1]] = -(depth + sLength);
+				queue[qSize] = [tboard2, nextLoc, depth, dir];
+				wasHere[nextLoc[0]][nextLoc[1]][depth] = true;
+				qSize++;
+				break;
+			case 1:
+				queue[qSize] = [1, nextLoc, depth, dir];
+				wasHere[nextLoc[0]][nextLoc[1]][depth] = true;
+				qSize++;
+				return qSize;
+			case 2:
+				break;
+			default:
+				if (bval >= -depth) {
+					tboard2 = simpleCopy(tboard);
+					tboard2[nextLoc[0]][nextLoc[1]] = -(depth + sLength);
+					queue[qSize] = [tboard2, nextLoc, depth, dir];
 					wasHere[nextLoc[0]][nextLoc[1]][depth] = true;
 					qSize++;
 				}
@@ -477,6 +547,8 @@ function getNewSettings() {
 		'teleportationWalls': getInputValue('teleportation-walls'),
 		'multiplayer': getInputValue('multiplayer'),
 		'aiTurn': getInputValue('ai-turn'),
+		'aiMode': getInputValue('ai-mode'),
+		'aiMode2': getInputValue('ai-mode-2'),
 	}
 }
 
@@ -486,6 +558,8 @@ function populateSettingsForm(settings) {
 	setInputValue('teleportation-walls', settings.teleportationWalls);
 	setInputValue('multiplayer', settings.multiplayer);
 	setInputValue('ai-turn', settings.aiTurn);
+	setInputValue('ai-mode', settings.aiMode);
+	setInputValue('ai-mode-2', settings.aiMode2);
 }
 
 function aiCopy(board) {
