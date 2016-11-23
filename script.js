@@ -212,7 +212,6 @@ function killSnake(fval) {
 	stopMoving();
 	var winval = fval === 1 ? 2:1;
 	over = true;
-	drawBoard();
 	setTimeout(function () {
 		if (multiplayer)
 			alert("Game Over! Player " + winval + " won with a length of " +
