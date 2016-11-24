@@ -220,6 +220,13 @@ function killSnake(fval) {
 	}, 10);
 }
 
+function getAiFunction(mode) {
+	switch (mode) {
+		case 'shortest path': return bfsAi;
+		case 'shortest path fast': return shortestPathAi;
+	}
+}
+
 function moveSnake(draw) {
 	if (over !== false)
 		return;
@@ -230,14 +237,7 @@ function moveSnake(draw) {
 		decayTail(2);
 
 	if (aiTurn === 'first' || aiTurn === 'both')
-		switch (aiMode) {
-			case 'shortest path':
-				snakeDirectionFacing = bfsAi(snakeHead, snakeLength);
-				break;
-			case 'shortest path fast':
-				snakeDirectionFacing = shortestPathAi(snakeHead, snakeLength);
-				break;
-		}
+		snakeDirectionFacing = getAiFunction(aiMode)(snakeHead, snakeLength);
 
 	if (snakeDirectionFacing !== -1) {
 		if (snakeLength === 1) decayTail(1);
@@ -253,14 +253,7 @@ function moveSnake(draw) {
 	}
 
 	if (aiTurn === 'second' || aiTurn === 'both')
-		switch (aiMode2) {
-			case 'shortest path':
-				snakeDirectionFacing2 = bfsAi(snakeHead2, snakeLength2);
-				break;
-			case 'shortest path fast':
-				snakeDirectionFacing2 = shortestPathAi(snakeHead2, snakeLength2);
-				break;
-		}
+		snakeDirectionFacing2 = getAiFunction(aiMode2)(snakeHead2, snakeLength2);
 
 	if (multiplayer && snakeDirectionFacing2 !== -1) {
 		if (snakeLength2 === 1) decayTail(2);
@@ -289,7 +282,7 @@ function parseMove(tHead, sLength, snakeNum) {
 		case 1:
 			sLength++;
 			placeItem(1);
-			if (sLength % 10 === 0)
+			if ((snakeLength + snakeLength2) % 10 === 0)
 				placeItem(2);
 			break;
 		default:
