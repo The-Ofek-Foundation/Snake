@@ -19,6 +19,7 @@ var aiQueue;
 var aiWasHere;
 var multiplayer;
 var debug = false;
+var boulderFrequency;
 
 function pageReady() {
 	resizeBoard();
@@ -100,6 +101,7 @@ function getSettings() {
 	aiTurn = gameSettings.getOrSet('aiTurn', 'none');
 	aiMode = gameSettings.getOrSet('aiMode', 'shortest path');
 	aiMode2 = gameSettings.getOrSet('aiMode2', 'shortest path');
+	boulderFrequency = gameSettings.getOrSet('boulderFrequency', 10);
 }
 
 function placeItem(item) {
@@ -282,7 +284,8 @@ function parseMove(tHead, sLength, snakeNum) {
 		case 1:
 			sLength++;
 			placeItem(1);
-			if ((snakeLength + snakeLength2) % 10 === 0)
+			if (boulderFrequency !== 0 &&
+				(snakeLength + snakeLength2) % boulderFrequency === 0)
 				placeItem(2);
 			break;
 		default:
@@ -543,6 +546,7 @@ function getNewSettings() {
 		'aiTurn': getInputValue('ai-turn'),
 		'aiMode': getInputValue('ai-mode'),
 		'aiMode2': getInputValue('ai-mode-2'),
+		'boulderFrequency': getInputValue('boulder-frequency'),
 	}
 }
 
@@ -554,6 +558,7 @@ function populateSettingsForm(settings) {
 	setInputValue('ai-turn', settings.aiTurn);
 	setInputValue('ai-mode', settings.aiMode);
 	setInputValue('ai-mode-2', settings.aiMode2);
+	setInputValue('boulder-frequency', settings.boulderFrequency);
 }
 
 function aiCopy(board) {
