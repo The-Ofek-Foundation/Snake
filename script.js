@@ -462,7 +462,7 @@ document.addEventListener('keydown', function (event) {
 			}
 			var tempDirection = event.which - 37;
 			if ((tempDirection + lastDirectionMoved) % 2 === 1 ||
-				lastDirectionMoved === -1)
+				lastDirectionMoved === -1 || snakeLength <= 2)
 				snakeDirectionFacing = tempDirection;
 			if (!snakeMoving)
 				startMoving();
@@ -510,7 +510,7 @@ document.addEventListener('keypress', function (event) {
 		return;
 	}
 	if ((tempDirection + lastDirectionMoved2) % 2 === 1 ||
-		lastDirectionMoved2 === -1)
+		lastDirectionMoved2 === -1 || snakeLength2 <= 2)
 		snakeDirectionFacing2 = tempDirection;
 	if (!snakeMoving)
 		startMoving();
