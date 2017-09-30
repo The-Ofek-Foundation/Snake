@@ -24,7 +24,7 @@ var boulderFrequency;
 function pageReady() {
 	resizeBoard();
 	newGame();
-	setTimeout(resizeGameSettingsTable, 0);
+	setTimeout(resizeSettingsTable, 0);
 }
 
 function onResize() {
@@ -45,7 +45,7 @@ function resizeBoard() {
 	boardui.setAttribute('width', boardWidth);
 	boardui.setAttribute('height', boardWidth);
 
-	resizeGameSettingsTable();
+	resizeSettingsTable();
 }
 
 function newGame() {
