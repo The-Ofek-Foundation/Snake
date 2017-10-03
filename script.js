@@ -20,6 +20,7 @@ var aiWasHere;
 var multiplayer;
 var debug = false;
 var boulderFrequency;
+var alerts = true;
 
 function pageReady() {
 	resizeBoard();
@@ -214,12 +215,13 @@ function killSnake(fval) {
 	stopMoving();
 	var winval = fval === 1 ? 2:1;
 	over = true;
-	setTimeout(function () {
-		if (multiplayer)
-			alert("Game Over! Player " + winval + " won with a length of " +
-				(winval === 1 ? snakeLength:snakeLength2) + "!");
-		else alert("Game Over! Final Length: " + snakeLength);
-	}, 10);
+	if (alerts)
+		setTimeout(function () {
+			if (multiplayer)
+				alert("Game Over! Player " + winval + " won with a length of " +
+					(winval === 1 ? snakeLength:snakeLength2) + "!");
+			else alert("Game Over! Final Length: " + snakeLength);
+		}, 10);
 }
 
 function getAiFunction(mode) {
@@ -516,27 +518,6 @@ document.addEventListener('keypress', function (event) {
 		startMoving();
 });
 
-getElemId('done').addEventListener('click', function (event) {
-	var settings = getNewSettings();
-	gameSettings.setSettings(settings);
-	hideSettingsForm();
-	newGame();
-});
-
-getElemId('cancel').addEventListener('click', function (event) {
-	hideSettingsForm();
-	populateSettingsForm(gameSettings.getSettings());
-});
-
-if (getElemId('save'))
-	getElemId('save').addEventListener('click', function (event) {
-		var settings = getNewSettings();
-		gameSettings.setSettings(settings);
-		gameSettings.saveSettings(settings);
-		hideSettingsForm();
-		newGame();
-	});
-
 function getNewSettings() {
 	return {
 		'dimensions': [getInputValue('dimension-x'), getInputValue('dimension-x')],
@@ -671,4 +652,57 @@ function gameStats(numGames) {
 	}
 	console.log("Average Length: " + snakeLengthSum / numGames);
 	console.log("Average Game Duration: " + elapsedTimeSum / numGames);
+}
+
+function gameStatsR(numGamesLeft, interval, lens, moves) {
+	if (interval === undefined)
+		interval = 1;
+	if (lens === undefined) {
+		alerts = false;
+		lens = new Array(numGamesLeft);
+		moves = new Array(numGamesLeft);
+		for (var i = 0; i < lens.length; i++)
+			lens[i] = moves[i] = 0;
+	}
+	if (numGamesLeft === 0) {
+		console.log("\n\n\nDONE!!!\n\n\n");
+		analyzeStats(lens, moves);
+	} else {
+		newGame();
+		runGameR(numGamesLeft - 1, interval, lens, moves, 0);
+	}
+}
+
+function runGameR(numGamesLeft, interval, lens, moves, moveOn) {
+	if (over !== false) {
+		lens[numGamesLeft] = snakeLength;
+		moves[numGamesLeft] = moveOn;
+		analyzeStats(lens, moves);
+		gameStatsR(numGamesLeft, interval, lens, moves);
+	} else {
+		moveSnake(true);
+		setTimeout(function() {
+			runGameR(numGamesLeft, interval, lens, moves, moveOn + 1);
+		}, interval);
+	}
+}
+
+function analyzeStats(lens, moves) {
+	console.log(lens, moves);
+	var maxLength = Math.max.apply(null, lens);
+	if (lens[lens.lastIndexOf(0) + 1] === maxLength)
+		console.log("New Max Length!", maxLength);
+	var minLength = Math.min.apply(null, lens);
+	if (lens[lens.lastIndexOf(0) + 1] === minLength)
+		console.log("New Max Length!", minLength);
+
+	if (lens[0] !== 0)
+		console.log("Average length:", avg(lens));
+}
+
+function avg(list) {
+	var sum = 0;
+	for (var i = 0; i < list.length; i++)
+		sum += list[i];
+	return sum / list.length;
 }
